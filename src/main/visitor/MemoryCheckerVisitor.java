@@ -1,4 +1,4 @@
-package main.visitor;
+/*package main.visitor;
 
 import main.ast.nodes.*;
 import main.ast.nodes.Stmt.*;
@@ -535,6 +535,620 @@ public class MemoryCheckerVisitor extends Visitor<Void> {
 
             ex.accept(this);
         }
+        return null;
+    }
+
+    @Override
+    public Void visit(BinaryExpr binaryExpr) {
+        binaryExpr.getFirstOperand().accept(this);
+        binaryExpr.getSecondOperand().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visit(UnaryExpr unaryExpr) {
+        unaryExpr.getOperand().accept(this);
+        return null;
+    }
+}*/
+package main.visitor;
+
+import main.ast.nodes.*;
+import main.ast.nodes.Stmt.*;
+import main.ast.nodes.declaration.*;
+import main.ast.nodes.expr.*;
+import main.ast.nodes.expr.primitives.UnaryOperator;
+import main.ast.nodes.externalDeclaration.ExternalDeclaration;
+import main.ast.nodes.externalDeclaration.FunctionDefinition;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Stack;
+
+public class MemoryCheckerVisitor extends Visitor<Void> {
+
+    private final HashMap<String, FunctionDefinition> functionDefinitions = new HashMap<>();
+    private final Stack<HashMap<String, Integer>> allocatedPointersStack = new Stack<>();
+    private final Stack<HashSet<String>> initializedVariablesStack = new Stack<>();
+    private final Stack<HashSet<String>> taintedVariablesStack = new Stack<>();
+
+    //region Helper Methods for State Management
+    private HashMap<String, Integer> allocatedPointers() {
+        return allocatedPointersStack.peek();
+    }
+
+    private HashSet<String> initializedVariables() {
+        return initializedVariablesStack.peek();
+    }
+
+    private HashSet<String> taintedVariables() {
+        return taintedVariablesStack.peek();
+    }
+
+    private boolean isInitialized(String name) {
+        for (int i = initializedVariablesStack.size() - 1; i >= 0; i--) {
+            if (initializedVariablesStack.get(i).contains(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isTainted(Expr expr) {
+        if (expr == null) return false;
+        if (expr instanceof Identifier) {
+            String name = ((Identifier) expr).getName();
+            for (HashSet<String> scope : taintedVariablesStack) {
+                if (scope.contains(name)) return true;
+            }
+        }
+        if (expr instanceof BinaryExpr) {
+            return isTainted(((BinaryExpr) expr).getFirstOperand()) || isTainted(((BinaryExpr) expr).getSecondOperand());
+        }
+        if (expr instanceof UnaryExpr) {
+            return isTainted(((UnaryExpr) expr).getOperand());
+        }
+        return false;
+    }
+
+    private boolean isPointerAllocated(String name) {
+        for (HashMap<String, Integer> scope : allocatedPointersStack) {
+            if (scope.containsKey(name)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void freePointer(String name) {
+        for (HashMap<String, Integer> scope : allocatedPointersStack) {
+            if (scope.remove(name) != null) {
+                return;
+            }
+        }
+    }
+
+    private void markTainted(Expr args) {
+        if (args instanceof Identifier) {
+            taintedVariables().add(((Identifier) args).getName());
+        } else if (args instanceof ArgumentExpressionList) {
+            for (Expr arg : ((ArgumentExpressionList) args).getArgumentsList()) {
+                if (arg instanceof Identifier) { // Simplified for now
+                    taintedVariables().add(((Identifier) arg).getName());
+                }
+            }
+        }
+    }
+
+    private void pushScope() {
+        allocatedPointersStack.push(new HashMap<>());
+        initializedVariablesStack.push(new HashSet<>());
+        taintedVariablesStack.push(new HashSet<>());
+    }
+
+    private void popScope() {
+        HashMap<String, Integer> leakedPointers = allocatedPointersStack.pop();
+        for (String ptrName : leakedPointers.keySet()) {
+            System.out.println("Line:" + leakedPointers.get(ptrName) + " -> memory not deallocated");
+        }
+        initializedVariablesStack.pop();
+        taintedVariablesStack.pop();
+    }
+    //endregion
+
+    @Override
+    public Void visit(Program program) {
+        // First pass: collect all function definitions
+        for (ExternalDeclaration dec : program.getTranslationUnit().getExternalDeclarations()) {
+            if (dec instanceof FunctionDefinition) {
+                FunctionDefinition funcDef = (FunctionDefinition) dec;
+                functionDefinitions.put(funcDef.getName(), funcDef);
+            }
+        }
+
+        // Second pass: start analysis from main (or all functions if no main)
+        FunctionDefinition mainFunction = functionDefinitions.get("main");
+        if (mainFunction != null) {
+            mainFunction.accept(this);
+        } else {
+            // Or visit all functions if there's no main entry point
+            for (FunctionDefinition funcDef : functionDefinitions.values()) {
+                funcDef.accept(this);
+            }
+        }
+
+        return null;
+    }
+
+    @Override
+    public Void visit(FunctionDefinition functionDefinition) {
+        pushScope();
+
+        if (functionDefinition.getParVars() != null) {
+            functionDefinition.getParVars().forEach(p -> initializedVariables().add(p.getName()));
+        }
+
+        for (Cnt stmt : functionDefinition.getStmts()) {
+            stmt.accept(this);
+        }
+
+        popScope();
+        return null;
+    }
+
+    @Override
+    public Void visit(DeclarationSpecifiers declarationSpecifiers) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Declarator declarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(DeclarationList declarationList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(CompoundStatement compoundStatement) {
+        return null;
+    }
+
+    @Override
+    public Void visit(DeclarationSpecifier declarationSpecifier) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Pointer pointer) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Constant constant) {
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeName_initList typeNameInitList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ArrIndexing arrIndexing) {
+        return null;
+    }
+
+    @Override
+    public Void visit(FuncCallExpr funcCallExpr) {
+        Identifier funcNameId = (Identifier) funcCallExpr.getName();
+        String funcName = funcNameId.getName();
+
+        // Handle special built-in functions first
+        if ("free".equals(funcName)) {
+            Expr arg = ((ArgumentExpressionList) funcCallExpr.getArguments()).getArgumentsList().get(0);
+            if (arg instanceof Identifier) {
+                freePointer(((Identifier) arg).getName());
+            }
+            return null;
+        }
+
+        if ("scanf".equals(funcName)) {
+            markTainted(funcCallExpr.getArguments());
+            return null;
+        }
+
+        // For user-defined functions, perform inter-procedural analysis
+        FunctionDefinition callee = functionDefinitions.get(funcName);
+        if (callee != null) {
+            // Simulate the function call
+            HashMap<String, Integer> newAllocated = new HashMap<>();
+            HashSet<String> newInitialized = new HashSet<>();
+            HashSet<String> newTainted = new HashSet<>();
+
+        //    ArrayList<Expr> args = ((ArgumentExpressionList) funcCallExpr.getArguments()).getArgumentsList();
+            ArrayList<DeclarationSpecifiers> params = callee.getParVars();
+            ArrayList<Expr> args=   ((ArgumentExpressionList) funcCallExpr.getArguments()).calledFuncParams();
+            // 1. Propagate state from arguments to parameters
+            for (int i = 0; i < params.size(); i++) {
+                String paramName = params.get(i).getName();
+                newInitialized.add(paramName); // Parameters are considered initialized
+
+                if (args.get(i) instanceof Identifier) {
+                    String argName = ((Identifier) args.get(i)).getName();
+                    if (isPointerAllocated(argName)) {
+                        newAllocated.put(paramName, args.get(i).getLine());
+                    }
+                    if (isTainted(args.get(i))) {
+                        newTainted.add(paramName);
+                    }
+                }
+            //    else if(args.get(i) instanceof Constant ){
+
+                //}
+
+            }
+
+            // 2. Push the new scope and visit the function body
+            allocatedPointersStack.push(newAllocated);
+            initializedVariablesStack.push(newInitialized);
+            taintedVariablesStack.push(newTainted);
+
+            for (Cnt stmt : callee.getStmts()) {
+                stmt.accept(this);
+            }
+
+            // 3. Propagate effects back to the caller's scope
+            for (int i = 0; i < params.size(); i++) {
+                String paramName = params.get(i).getName();
+                Expr arg = args.get(i);
+
+                if (arg instanceof Identifier) {
+                    String argName = ((Identifier) arg).getName();
+                    // If parameter pointer was freed, reflect it in the caller's scope
+                    if (isPointerAllocated(argName) && allocatedPointers().containsKey(paramName)) {
+                        freePointer(argName);
+                    }
+                }
+            }
+
+            // 4. Pop the function's scope (leaks inside are checked here)
+            popScope();
+
+        } /*else {
+            // If function is not found, just visit arguments
+            if (funcCallExpr.getArguments() != null) {
+                funcCallExpr.getArguments().accept(this);
+            }
+        }*/
+        return null;
+    }
+
+    // All other visit methods for expressions and declarations remain the same
+    // as the previously corrected version...
+
+    @Override
+    public Void visit(TranslationUnit translationUnit) {
+        for (ExternalDeclaration ex : translationUnit.getExternalDeclarations()) {
+            if (ex instanceof FunctionDefinition) {
+                if (((FunctionDefinition) ex).getName().equals("main")) {
+                    ex.accept(this);
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(Declaration declaration) {
+        if (declaration.getInitDeclaratorList() != null) {
+            for (InitDeclarator declarator : declaration.getInitDeclaratorList().getInitDeclarator()) {
+                if (declarator.getInitializer() != null) {
+                    Expr rhs = declarator.getInitializer().getExpression();
+                    rhs.accept(this); // Check RHS first
+                    String varName = declarator.getValName();
+                    initializedVariables().add(varName);
+
+                    if (rhs instanceof FuncCallExpr && "malloc".equals(((Identifier)((FuncCallExpr)rhs).getName()).getName())) {
+                        allocatedPointers().put(varName, rhs.getLine());
+                        if (isTainted(((FuncCallExpr) rhs).getArguments())) {
+                            System.out.println("Line:" + rhs.getLine() + " -> user-controlled value used in malloc");
+                        }
+                    } else if (isTainted(rhs)) {
+                        taintedVariables().add(varName);
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(InitDeclarator initDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Initializer initializer) {
+        return null;
+    }
+
+    @Override
+    public Void visit(BlockItem blockItem) {
+        return null;
+    }
+
+    @Override
+    public Void visit(AssignmentExpr assignmentExpr) {
+        Expr lhs = assignmentExpr.getLeft();
+        Expr rhs = assignmentExpr.getRight();
+        rhs.accept(this);
+        if (lhs instanceof Identifier) {
+            String varName = ((Identifier) lhs).getName();
+            if (rhs instanceof FuncCallExpr && "malloc".equals(((Identifier)((FuncCallExpr)rhs).getName()).getName())) {
+                allocatedPointers().put(varName, lhs.getLine());
+                if (isTainted(((FuncCallExpr) rhs).getArguments())) {
+                    System.out.println("Line:" + rhs.getLine() + " -> user-controlled value used in malloc");
+                }
+            }
+            initializedVariables().add(varName);
+            if (isTainted(rhs)) {
+                taintedVariables().add(varName);
+            }
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(Assignment assignment) {
+        return null;
+    }
+
+    @Override
+    public Void visit(commaExpr commaExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ConditionalExpr conditionalExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Identifier identifier) {
+        if (!isInitialized(identifier.getName())) {
+            System.out.println("Line:" + identifier.getLine() + " -> uninitialized variable used");
+        }
+        return null;
+    }
+
+    @Override
+    public Void visit(If anIf) {
+        anIf.getExpression().accept(this);
+        pushScope();
+        for (Cnt c : anIf.getStmts()) { c.accept(this); }
+        popScope();
+        return null;
+    }
+
+    @Override
+    public Void visit(Else anElse) {
+        pushScope();
+        for (Cnt c : anElse.getStmts()) { c.accept(this); }
+        popScope();
+        return null;
+
+    }
+
+    @Override
+    public Void visit(ArgumentExpressionList argumentExpressionList) {
+        return null;
+    }
+
+   /* @Override
+    public Void visit(ElseAnElse anElse) {
+        pushScope();
+        for (Cnt c : anElse.getStmts()) { c.accept(this); }
+        popScope();
+        return null;
+    }*/
+
+    @Override
+    public Void visit(ElseIf elseIf) {
+        elseIf.getExpression().accept(this);
+        pushScope();
+        for (Cnt c : elseIf.getStmts()) { c.accept(this); }
+        popScope();
+        return null;
+    }
+
+    @Override
+    public Void visit(ExpressionStatement expressionStatement) {
+        if(expressionStatement.getExpression() != null)
+            expressionStatement.getExpression().accept(this);
+        return null;
+    }
+
+    @Override
+    public Void visit(JumpStatement jumpStatement) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ForExpression forExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Designator designator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Designation designation) {
+        return null;
+    }
+
+    @Override
+    public Void visit(InitializerList initializerList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(InitDeclaratorList initDeclaratorList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ForDeclaration forDeclaration) {
+        return null;
+    }
+
+    @Override
+    public Void visit(WhileStmt whileStmt) {
+        return null;
+    }
+
+    @Override
+    public Void visit(DoWhile doWhile) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ForStmt forStmt) {
+        return null;
+    }
+
+    @Override
+    public Void visit(IdentifierList identifierList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(UnaryOperator unaryOperator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ParameterList parameterList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ParameterDeclaration parameterDeclaration) {
+        return null;
+    }
+
+    @Override
+    public Void visit(AbstractDeclarator abstractDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ExpressionDAD expressionDAD) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type2DAD type2DAD) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type3DAD type3DAD) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type4DAD type4DAD) {
+        return null;
+    }
+
+    @Override
+    public Void visit(SpecifierQualifierList specifierQualifierList) {
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeName typeName) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type1CastExpression type1CastExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type2CastExpression type2CastExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type3CastExpression type3CastExpression) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type1DirectDeclarator type1DirectDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(CastExpression2 castExpression2) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type2DirectDeclarator type2DirectDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type3DirectDeclarator type3DirectDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(Type4DirectDeclarator type4DirectDeclarator) {
+        return null;
+    }
+
+    @Override
+    public Void visit(IDPrefixExpr idPrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ConstantPrefixExpr constantPrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(StringPrefixExpr stringPrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(ExprPrefixExpr exprPrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeNamePrefixExpr typeNamePrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(UnaryCastPrefixExpr unaryCastPrefixExpr) {
+        return null;
+    }
+
+    @Override
+    public Void visit(TypeOfPrefixExpr typeOfPrefixExpr) {
         return null;
     }
 

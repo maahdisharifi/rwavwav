@@ -15,6 +15,18 @@ public class commaExpr extends Expr{
     public ArrayList<Expr> getList() {
         return List;
     }
+    public void calledFunctionParams(ArrayList<Expr> ans){
+        for(Expr e:List) {
+            if(e instanceof commaExpr){
+                ((commaExpr) e).calledFunctionParams(ans);
+            }
+            else {
+                ans.add(e);
+            }
+            // return this.List.size();
+        }
+        return;
+    }
     public int parameterSizeOfCalledFunc(){
         int sum=0;
         for(Expr e:List) {
