@@ -1,14 +1,33 @@
-FuncDec hello(){
-    how_are_you();          //Undeclared function "how_are_you"
+
+//no errors
+
+FuncDec first_func(){
+    int apple;
+    apple = 10;
+    int x;
+    x=6;
+    return apple + x;
 }
 
-main() {
-    int b;
-    b = 10;
-    if (b + a + test())         //Undeclared function "test"   //Undeclared variable "a"
-        b = b + 5;
-    else
-        x();                     //Undeclared function "x"
+FuncDec second_func(){
+    return 3;
+}
 
-    int b;                       //Redeclaration of "b"
+FuncDec third_func(){
+    double banana;
+    banana = 33 / second_func();
+    return banana == 55;
+}
+
+
+main(){
+    int test;
+    test = first_func()++;
+    bool first_bool;
+    bool second_bool;
+    first_bool = true || third_func();
+    first_bool = test == first_func() && first_bool;
+    int tmp;
+    tmp = 55++ + 10 * first_func() + second_func();
+    return tmp * test;
 }
