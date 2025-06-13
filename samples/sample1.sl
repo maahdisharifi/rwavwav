@@ -1,34 +1,9 @@
-
-
-
-FuncDec first_func():
-   int y
-   if(6):                //if condition error
-        y = 56
-   else:
-        y = 125
-   return y++
+void cleanup(int* ptr1,int x):
+    free(ptr1)
 end
 
-
-FuncDec second_func():
-    string x
-    x = 5             //assignment error
-    return 3
-end
-
-
-FuncDec third_func():
-    char banana
-    banana = 'b'
-    return banana * 55 //incompatible operands
-end
-
-
-main():
-    double tmp
-    tmp = first_func()
-    int test
-    test = 0
-    return tmp * test
+int main():
+    int* ptr1 = malloc(sizeof(int) * 10)
+    int* ptr2 = malloc(sizeof(int) * 20)
+    cleanup(ptr1,12)
 end

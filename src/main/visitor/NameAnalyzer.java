@@ -28,7 +28,7 @@ import java.util.Arrays;
 public class NameAnalyzer extends Visitor<Void>{
 
     public boolean nameAnalyzerActivated=false;
-    ArrayList<String> builtInFunctions = new ArrayList<>(Arrays.asList("printf", "scanf"));
+    ArrayList<String> builtInFunctions = new ArrayList<>(Arrays.asList("printf", "scanf","malloc","free"));
     @Override
     public Void visit(ArgumentExpressionList ae){
 

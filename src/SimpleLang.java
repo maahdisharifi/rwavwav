@@ -27,6 +27,9 @@ public class SimpleLang {
         System.out.println();
         NameAnalyzer my_name_analyzer = new NameAnalyzer();
         my_name_analyzer.visit(program);
+        System.out.println();
+        MemoryCheckerVisitor memoryChecker = new MemoryCheckerVisitor();
+        memoryChecker.visit(program);
         TestVisitor my_visitor = new TestVisitor();
         //my_visitor.setReachablefuncs(Reachablefuncs);
         my_visitor.visit(program);

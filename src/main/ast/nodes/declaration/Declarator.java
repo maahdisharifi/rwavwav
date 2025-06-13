@@ -8,6 +8,7 @@ import java.util.ArrayList;
 public class Declarator extends Node {
 
     private Pointer pointer;
+   public int getStar(){return this.pointer.getStar();}
     private  DirectDeclarator DirectDeclarator;
 
     public String getName(){return this.DirectDeclarator.getVal();}
@@ -28,7 +29,24 @@ public class Declarator extends Node {
       Type4DirectDeclarator t=    (Type4DirectDeclarator)this.DirectDeclarator;
      //
      for( ParameterDeclaration p :t.getParameterList()){
-            ans.add(p.getDeclarationSpecifiers());
+            if(p.getDeclarator()==null) {
+                ans.add(p.getDeclarationSpecifiers());
+            }
+            else {
+                DeclarationSpecifiers a=  new DeclarationSpecifiers();
+                int sc=p.getDeclarator().getStar();
+                String s="";
+               for(int i=0;i< sc;i++){
+                 s+="*";
+
+               }
+                DeclarationSpecifier first= new DeclarationSpecifier(p.getDeclarationSpecifiers().getType()+s);
+                DeclarationSpecifier second= new DeclarationSpecifier("identifer",p.getDeclarator().DirectDeclarator.getVal());
+
+                a.add(first);
+                a.add(second);
+                ans.add(a);
+            }
      }
     return  ans;
     }

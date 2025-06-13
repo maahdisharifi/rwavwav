@@ -138,7 +138,7 @@ directDeclarator returns [DirectDeclarator directDeclaratorRet]
      LeftParen  (p=parameterList{x1.setParameterList($p.parameterListRet);} | (il=identifierList{x1.setIdentifierList($il.identifierListRet);})?) r=RightParen{x1.setLine($r.line);$directDeclaratorRet=x1;} ;
 
 pointer returns [Pointer pointerRet]
-    : ((Star) (Const+)?)+ {$pointerRet=new Pointer();} ;
+    : {int StarCount=0;} ((Star {StarCount+=1;}) (Const+)?)+ {$pointerRet=new Pointer(StarCount);} ;
 
 parameterList returns [ParameterList parameterListRet]
     : {$parameterListRet=new ParameterList(); } p1=parameterDeclaration {$parameterListRet.add($p1.parameterDeclarationRet);}

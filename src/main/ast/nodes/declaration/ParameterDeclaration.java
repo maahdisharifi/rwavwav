@@ -21,4 +21,8 @@ public class ParameterDeclaration extends Node {
         return visitor.visit(this);
     }
     public ParameterDeclaration(DeclarationSpecifiers D){this.declarationSpecifiers=D;}
+
+    public Declarator getDeclarator() {
+        return this.declarator;
+    }
 }
