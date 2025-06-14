@@ -1,5 +1,6 @@
 package main.ast.nodes.expr;
 
+import main.ast.nodes.declaration.Type2CastExpression;
 import main.visitor.IVisitor;
 
 import java.util.ArrayList;
@@ -44,4 +45,13 @@ public class commaExpr extends Expr{
     public void add(Expr e){List.add(e);}
     @Override
     public void printRoot(){System.out.println("Line "+String.valueOf(getLine())+": Expr ,");}
+
+    public void calledFunctionParams2(ArrayList<Expr> ans) {
+
+            ans.add(this.getList().get(0));
+        UnaryCastPrefixExpr tc=(UnaryCastPrefixExpr) this.List.get(1);
+
+            tc.getParams( ans);
+
+    }
 }
