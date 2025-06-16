@@ -30,7 +30,12 @@ public class SimpleLang {
         System.out.println();
         MemoryCheckerVisitor memoryChecker = new MemoryCheckerVisitor();
         memoryChecker.visit(program);
+
+        TypeCheckerVisitor typeChecker = new TypeCheckerVisitor();
+        typeChecker.visit(program);
+
         TestVisitor my_visitor = new TestVisitor();
+
         //my_visitor.setReachablefuncs(Reachablefuncs);
         my_visitor.visit(program);
 

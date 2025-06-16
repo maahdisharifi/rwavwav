@@ -21,6 +21,7 @@ public class FunctionDefinition extends ExternalDeclaration{
     @Override
     public void printStmtsCount(){ System.out.println("Line " +String.valueOf(getLine())+ ": Stmt function " + declarator.getName() + " = " + String.valueOf(CountStmts() +" " + this.getParametersSize() ));}/*System.out.println(this.stmts.size());*/
     private DeclarationSpecifiers declarationSpecifiers;
+
     private Declarator declarator;
    // private int parametersSize=0;
     public void DeletePar(DeclarationSpecifiers d){
@@ -55,14 +56,9 @@ public class FunctionDefinition extends ExternalDeclaration{
     }
 
 
-
-
-
-
-
-
-
-
+    public DeclarationSpecifiers getDeclarationSpecifiers() {
+        return this.declarationSpecifiers;
+    }
 }
 //@Override
 //    public <T> T accept(IVisitor<T> visitor){return visitor.visit(this);}

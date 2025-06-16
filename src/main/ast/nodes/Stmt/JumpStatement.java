@@ -1,5 +1,6 @@
 package main.ast.nodes.Stmt;
 
+import main.ast.nodes.Node;
 import main.ast.nodes.expr.Expr;
 import main.visitor.IVisitor;
 
@@ -11,6 +12,7 @@ public class JumpStatement extends Stmt{
         return visitor.visit(this);
     }
     String type;
+    public String getType(){return this.type;}
     public JumpStatement(String s){this.type=s; expr=null;}
     //public JumpStatement(String s,Expr e){this.type=s;this.expr=e;}
    public void setExpr(Expr e){this.expr=e;}
@@ -24,5 +26,9 @@ public class JumpStatement extends Stmt{
         if(Objects.equals(this.type, "return") && expr!=null){
             expr.printRoot();
         }
+    }
+
+    public Expr getReturn_value() {
+        return this.expr;
     }
 }

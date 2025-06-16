@@ -17,6 +17,7 @@ public class VarDecSymbolTableItem extends SymbolTableItem{
    // }
 
    // private VarDec varDec;
+    public String getType(){return this.declarationSpecifiers.getType();}
     private DeclarationSpecifiers declarationSpecifiers;// type is always here ; name could be here
     private InitDeclarator initDeclarator;// name could be here
 

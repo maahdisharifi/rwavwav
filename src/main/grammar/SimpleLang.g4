@@ -90,14 +90,14 @@ assignmentOperator returns [ Assignment  assignmentRet]
       o=  OrAssign{$assignmentRet=new Assignment($o.text);$assignmentRet.setLine($o.line);} ;
 
 declaration returns [Declaration declarationRet]
-    : {$declarationRet=new Declaration();} d=declarationSpecifiers{$declarationRet.setDeclarationSpecifiers($d.declarationSpecifiersRet);}
+    : {$declarationRet=new Declaration();} d=declarationSpecifiers{$declarationRet.setDeclarationSpecifiers($d.declarationSpecifiersRet);$declarationRet.setLine($d.declarationSpecifiersRet.getLine());}
         (i=initDeclaratorList{$declarationRet.setInitDeclaratorList($i.initDeclaratorListRet);})?(Newline)  ;
 
 declarationSpecifiers returns [DeclarationSpecifiers declarationSpecifiersRet]
-    : {$declarationSpecifiersRet =new DeclarationSpecifiers();} (d=declarationSpecifier {$declarationSpecifiersRet.add($d.declarationSpecifierRet);})+ ;
+    : {$declarationSpecifiersRet =new DeclarationSpecifiers();} (d=declarationSpecifier {$declarationSpecifiersRet.add($d.declarationSpecifierRet);$declarationSpecifiersRet.setLine($d.declarationSpecifierRet.getLine());})+ ;
 
 declarationSpecifier returns [DeclarationSpecifier declarationSpecifierRet]
-    : Typedef {$declarationSpecifierRet=new DeclarationSpecifier("typedef"); } |t= typeSpecifier{$declarationSpecifierRet=$t.declarationSpecifierRet2;} | Const {$declarationSpecifierRet=new DeclarationSpecifier("const");} ;
+    : a=Typedef {$declarationSpecifierRet=new DeclarationSpecifier("typedef");$declarationSpecifierRet.setLine($a.line); } |t= typeSpecifier{$declarationSpecifierRet=$t.declarationSpecifierRet2;$declarationSpecifierRet.setLine($t.declarationSpecifierRet2.getLine());} | c=Const {$declarationSpecifierRet=new DeclarationSpecifier("const");$declarationSpecifierRet.setLine($c.line);} ;
 
 initDeclaratorList returns [InitDeclaratorList initDeclaratorListRet]
     : {$initDeclaratorListRet=new InitDeclaratorList();} i1=initDeclarator
@@ -108,16 +108,16 @@ initDeclarator returns [InitDeclarator initDeclaratorRet]
         (Assign i=initializer{$initDeclaratorRet.setInitializer($i.initializerRet);})? ;
 
 typeSpecifier returns [DeclarationSpecifier declarationSpecifierRet2]
-    : Void {$declarationSpecifierRet2=new DeclarationSpecifier("void"); } |
-     Char{$declarationSpecifierRet2=new DeclarationSpecifier("char"); } |
-      Short{$declarationSpecifierRet2=new DeclarationSpecifier("short"); } |
-       Int{$declarationSpecifierRet2=new DeclarationSpecifier("int"); } |
-        Long{$declarationSpecifierRet2=new DeclarationSpecifier("long"); } |
-         Float {$declarationSpecifierRet2=new DeclarationSpecifier("float"); }|
-          Double{$declarationSpecifierRet2=new DeclarationSpecifier("double"); } |
-           Signed{$declarationSpecifierRet2=new DeclarationSpecifier("signed"); } |
-            Unsigned{$declarationSpecifierRet2=new DeclarationSpecifier("unsigned"); } |
-             Bool{$declarationSpecifierRet2=new DeclarationSpecifier("bool"); } |
+    : v= Void {$declarationSpecifierRet2=new DeclarationSpecifier("void"); $declarationSpecifierRet2.setLine($v.line); } |
+     c=Char{$declarationSpecifierRet2=new DeclarationSpecifier("char");$declarationSpecifierRet2.setLine($c.line); } |
+     s= Short{$declarationSpecifierRet2=new DeclarationSpecifier("short"); $declarationSpecifierRet2.setLine($s.line); } |
+       iq=Int{$declarationSpecifierRet2=new DeclarationSpecifier("int");$declarationSpecifierRet2.setLine($iq.line); } |
+       l= Long{$declarationSpecifierRet2=new DeclarationSpecifier("long");$declarationSpecifierRet2.setLine($l.line); } |
+         f=Float {$declarationSpecifierRet2=new DeclarationSpecifier("float");$declarationSpecifierRet2.setLine($f.line); }|
+         d= Double{$declarationSpecifierRet2=new DeclarationSpecifier("double");$declarationSpecifierRet2.setLine($d.line); } |
+          ss= Signed{$declarationSpecifierRet2=new DeclarationSpecifier("signed");$declarationSpecifierRet2.setLine($ss.line); } |
+           u =Unsigned{$declarationSpecifierRet2=new DeclarationSpecifier("unsigned");$declarationSpecifierRet2.setLine($u.line); } |
+            b =Bool{$declarationSpecifierRet2=new DeclarationSpecifier("bool");$declarationSpecifierRet2.setLine($b.line); } |
               i=Identifier{$declarationSpecifierRet2=new DeclarationSpecifier("identifier",$i.text); } ;
 
 specifierQualifierList returns [SpecifierQualifierList specifierQualifierListRet]
@@ -261,7 +261,7 @@ forExpression returns [ ForExpression  forExpressionRet]
 jumpStatement returns [JumpStatement jumpStatementRet]
     : (  c=Continue{$jumpStatementRet=new JumpStatement($c.text); } |
     b=Break{$jumpStatementRet=new JumpStatement($b.text); } |
-     r=Return {$jumpStatementRet=new JumpStatement($r.text); } (e=expression {$jumpStatementRet.setExpr($e.expressionRet);$e.expressionRet.setLine($r.line);} )? ) (Newline);
+     r=Return {$jumpStatementRet=new JumpStatement($r.text); $jumpStatementRet.setLine($r.line);} (e=expression {$jumpStatementRet.setExpr($e.expressionRet);$e.expressionRet.setLine($r.line);} )? ) (Newline);
 End :'end';
 Break                 : 'break'                 ;
 Char                  : 'char'                  ;
